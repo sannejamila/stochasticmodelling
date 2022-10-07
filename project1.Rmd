@@ -1,29 +1,206 @@
 ---
-title: "Project 1"
+title: "Project 1 - Stochastic Modelling"
 output: pdf_document
-date: '2022-10-04'
+date: 'By: Sanne Jamila Razmara Olsen & Einride Brodahl Osland'
 ---
-
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+library(knitr)
+knitr::opts_chunk$set(echo = TRUE,tidy=TRUE,message=FALSE,warning=FALSE,strip.white=TRUE,prompt=FALSE,
+                      cache=TRUE, size="scriptsize",fig.width=4, fig.height=3,fig.align = "center")
 ```
 
-## R Markdown
+__Problem 1__
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+For this problem we are analyzing an outbreak of measles. We use a simplified model where each individual can have in of the following states; susceptible (S), infected(I) and recovered/immune (R). Let $n = 0,1,2 ...$
+denote time measured in days and assume that each day
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+1. A susceptible individual can become infected or remain susceptible
+2. An infected individual can become recovered or remain infected,
+3. A recovered individual can lose immunity and become susceptible, or remain recovered.
 
-```{r cars}
-summary(cars)
+Assume that the individuals in the population are independent, and assume that for each day, any susceptible individual has a probability of $0 < \beta < 1$ of becoming infected tomorrow, any infected individual has a probability $0 < \gamma < 1$ of becoming recovered tomorrow, and any recovered individual has a probability $0 < \alpha < 1$ of losing immunity tomorrow.
+
+a) 
+Let $X_n$ denote the state of that individual at time $n$. Let the states 0, 1 and 2 correspond to S, I and R, respectively, and assume that $X_0 = 0$.
+
+The Markov assumptions state that 
+
+1. The probabilities of moving from one state to all others sum to one.
+2. The probabilities apply to all system participants.
+3. The probabilities are constant over time.
+4. The states are independent over time.
+
+We have that for an individual that is in the state susceptible (S) has a probability of $0 < \beta < 1$ of becoming infected tomorrow, and thus a probability of$0 < 1-\beta < 1$ of not becoming infected tomorrow. An individual of the state (S) can not become immune or recovered, as being susceptible is a contradiction to being immune and the susceptible individual has to become infected (I) before it can be recovered (R). Thus all the probabilities of moving from the state susceptible (S) sum to one. As the probability of becoming infected tomorrow is the same for any day as long as the individual is in state S, it is constant over time (not time-dependent). The same arguments hold for the other states as well. Thus the system $\{X_n : n = 0,1,...\}$ is a Markov chain.
+
+Mark that a recovered/immune (individual in state (R)) or an infected individual (individual in state (I)) can not become susceptible (S). 
+
+We have that for state 0 (being susceptible), there is a probability of $0 < \beta < 1$ of becoming infected tomorrow, and thus a probability of$0 < 1-\beta < 1$ of staying susceptible (staying in state $0$) tomorrow (not being infected). There is a $0$ probability of becoming recovered tomorrow (moving to state $3$).
+
+Thus the first row of the transition probability matrix can be written as
+$$\textbf{P}_1 =
+\begin{bmatrix}
+1-\beta & \beta & 0 
+\end{bmatrix}
+$$
+We have that for state 1 (being infected), there is a probability of $0 < \gamma < 1$ of becoming recovered tomorrow, and thus a probability of$0 < 1-\gamma < 1$ of staying infected (staying in state $1$) tomorrow (not being recovered). There is a $0$ probability of becoming susceptible tomorrow (moving to state $0$).
+
+Thus the second row of the transition probability matrix can be written as
+$$\textbf{P}_2 =
+\begin{bmatrix}
+0 & 1-\gamma & \gamma
+\end{bmatrix}
+$$
+
+For the second state (being recovered), there is a probability of $0 < \alpha < 1$ of becoming susceptible tomorrow, and thus a probability of$0 < 1-\alpha< 1$ of staying recovered (staying in state $2$) tomorrow (being recovered). There is a $0$ probability of becoming infected tomorrow (moving to state $1$).
+
+Thus the third row of the transition probability matrix can be written as
+
+$$\textbf{P}_3 =
+\begin{bmatrix}
+\alpha & 0 & 1- \alpha
+\end{bmatrix}$$
+
+Such that the full transition matrix can be written as
+
+$$
+\textbf{P} =
+\begin{bmatrix}
+1-\beta & \beta & 0\\ 
+0 & 1-\gamma  & \gamma  \\
+\alpha & 0 & 1-\alpha
+\end{bmatrix}
+$$
+b) Assume $\beta = 0.01$, $\gamma = 0.1$ and $\alpha = 0.005$. We can thus write our transition matrix as
+$$
+\textbf{P} =
+\begin{bmatrix}
+0.99 & 0.01 & 0\\ 
+0 & 0.9  & 0.1  \\
+0.005 & 0 & 0.995
+\end{bmatrix}
+$$
+We have that
+
+$$
+\textbf{P}^2 =
+\begin{bmatrix}
+0.9801 & 0.0189 & 0.001\\ 
+0.005 & 0.81  & 0.1895  \\
+0.00995 & 0.005 & 0.990025
+\end{bmatrix}
+$$
+We know that the Markov chain is regular because $P_{ij}^2 > 0$ for all $i,j \in (0,1,2)$. Because $\{X_n : n = 0,1,2..\}$ is a regular Markov chain with state space $\{0,1,2\}$ and transition probability $\textbf{P}$, then there exists a limiting distribution $\pi = (\pi_0,\pi_1,\pi_2)$.
+
+In a regular Markov chain $\{ X_n : n = 0,1,2...\}$ the limiting distribution $\pi = (\pi_0,\pi_1,\pi_2)$ gives the long-run mean fraction of time spent in each state.
+
+We find these by solving the system $P \pi = \pi$.
+
+We only need two equations from the matrix system as we have that $\pi_1 + \pi_2 + \pi_3 = 1$.
+
+Choosing the following equations 
+
+$$
+0.99\pi_21 + 0.01\pi_2 = \pi_1
+$$
+$$
+0.9\pi_2 + 0.1\pi_3 = \pi_2
+$$
+$$\pi_1 + \pi_2 + \pi_3 = 1$$
+
+
+We obtain the solution $\pi_1 = \pi_2 = \pi_3 = \frac{1}{3}$. Thus the long-run mean number of days per year spent in each state is $122$ days.
+
+
+c)
+
+We assume that $X_0 = 0$. 
+
+```{r, eval = TRUE}
+simulate <- function(P, iter){
+  #Finding the number of rows of P
+  n <- nrow(P)
+  #Initializing vector of the states, iter states
+  states <- numeric(iter)
+  
+  #Assumption X_0 = 0
+  states[1] <- 1
+  
+  #Simulating Markov chain
+  for(t in 2:iter){
+    #Probability vector to simulate next state (X_t+1)
+    p <- P[states[t-1],]
+    #Draw from multinomial distrubution to choose next state
+    states[t] <- which(rmultinom(1,1,p) == 1)
+  }
+  return(states)
+}
+
+beta = 0.01
+gamma = 0.1
+alpha  = 0.005
+
+P = matrix(c(1-beta,beta,0,0,1-gamma,gamma,alpha,0,1-alpha),nrow = 3, byrow = TRUE)
+P
+
+#State 0,1,2 transformed to state 1,2,3
+n = 7300
+
+states <- simulate(P,n)
+
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+
+d) 
+e)
+f)
+g)
+__Problem 2__
+
+We have that $X(t)$ is the number of claims recieved by an insurance company in the time interval $[0,t]$. Assuming that $\{X(t) : t \ge 0\}$ can be modeled as a Poisson process, were $t$ is measured in days since January 1st at 00:00:00, assume that the rate of the Poisson process is given by $\lambda(t) = 1.5, t \ge 0$.
+
+a) We want to compute the probability that there are more than $100$ claims at March 1 at 00:00:00. In other words, after 59 days.
+
+We want to compute $P(X(59) > 100)$.
+
+We have that $X(t) \sim Poisson(\lambda t)$
+
+
+b) 
+
+```{r, eval = TRUE}
+
+Poisson_Process <- function(lambda,n){
+  #Creating empty vector of size n+1
+  v<-numeric(n+1)
+  v[1] <-0
+  x <-replicate(n,rexp(1,lambda))
+
+  for (k in 1:n){
+    v[k+1] <-sum(x[1:k])
+  }
+  return(v)
+}
+
+n<-1000
+lambda <-1.5
+
+s_list <-Poisson_Process(lambda,n)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r, eval=TRUE}
+n = 10
+# simulate list of wait time:
+s_list <-Poisson_Process(lambda,n)
+
+# plot function:
+plot(stepfun(0:(n-1), s_list), 
+     do.points = TRUE,
+     pch = 16,
+     col.points = "red",
+     verticals = FALSE,
+     main = 'Realization of a Poisson process with lambda = 1.5',xlab = 'Time', ylab = 'Number of claims')
+```
+
+_Problem 3_
