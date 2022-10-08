@@ -337,3 +337,26 @@ b)
 
 c)
 
+Let $Y_t$ denote the number of claims needing to be investigated recieved in the time interval $[0,t]$. We want to show that $\{Y(t) : t \ge 0 \}$ is a Poisson process.
+
+We have that
+
+$$
+P(Y(t) = x) = \sum_{n=0}^\infty P(Y(t) = x \mid X(t) = n) \cdot P(X(t) = n)
+$$
+From the law of total probability.
+
+We have that our expression can be written as
+
+$$
+\sum_{n=0}^\infty P(Y(t) = x \mid X(t) = n) \cdot P(X(t) = n) = \sum_{n = x}^\infty \frac{n!}{x!(n-x)!}p^x(1-p)^{n-x}\frac{(\lambda t)^n\exp(-\lambda t)}{n!}
+$$
+Which can further be written as
+$$
+\frac{\exp(\lambda t)(\lambda t p)^x}{x!}\sum_{n = x}^\infty \frac{\lambda t(1-p)^{n-x}}{(n-x)!} = \frac{\exp(\lambda t)(\lambda t p)^x}{x!} \exp(\lambda t (1-p))  = \frac{\exp(-p\lambda t)(\lambda t p)^x}{x!}
+$$
+
+We thus have that $P(Y(t) = x) = \frac{\exp(-p\lambda t)(\lambda t p)^x}{x!}$ which is the equivalence of a Poisson distribution with rate $\lambda p$.
+
+We now want to find the value of $p$ in order to compute the rate.
+
