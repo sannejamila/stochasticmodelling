@@ -113,6 +113,181 @@ confidence_interval <- function(P,N,j){
 
 ```
 
+__Problem 1e__
+
+```{r,eval=TRUE}
+set.seed(123)
+# Number of trials, with vectors to save the values in the process
+n<- 300
+S <- vector(length=n+1)
+I <- vector(length=n+1)
+R <- vector(length=n+1)
+
+#initial states of the population
+S[1]<- 950
+I[1]<- 50
+R[1]<- 0
+
+for (i in 1:n){
+	#inducing the new 
+	S_n <- rbinom(1, R[i], .005)
+	I_n <- rbinom(1, S[i], .5*I[i]/1000)
+	R_n <- rbinom(1, I[i], .1)
+	# Saving the new states into the vector introduced previously
+	S[i+1]= S[i]+S_n-I_n
+	I[i+1]= I[i]+I_n-R_n
+	R[i+1]= R[i]+R_n-S_n
+	#testing that the code works by seeing if the number of "peopl" sum to 1000
+	#print(R[i]+I[i]+S[i])
+	
+	
+}
+step<- seq(301)
+
+```
+```{r,eval=TRUE}
+
+plot(step, S,col="blue", main="Result",xlab="Time", ylab="People in given state",ylim=c(0,1000))
+lines(step, I,col="red")
+lines(step, R, col="green")
+
+```
+
+__Problem 1f__
+
+```{r,eval=TRUE}
+
+N<- 1000
+Large_infect= vector(length= N)
+Large_infect_step= vector(length= N)
+
+for(j in 1:N){
+	
+	#using the same code as for e for the simulations
+	n<- 300
+	S <- vector(length=n+1)
+	I <- vector(length=n+1)
+	R <- vector(length=n+1)
+
+	S[1]<- 950
+	I[1]<- 50
+	R[1]<- 0
+	
+	#initialize the maximum number of infected and its index
+	max_I<-0
+	index<-0
+
+
+	for (i in 1:n){
+	
+		S_n <- rbinom(1, R[i], .005)
+		I_n <- rbinom(1, S[i], .5*I[i]/1000)
+		R_n <- rbinom(1, I[i], .1)
+	# Saving the new states into the vector introduced previously
+		S[i+1]= S[i]+S_n-I_n
+		I[i+1]= I[i]+I_n-R_n
+		R[i+1]= R[i]+R_n-S_n
+
+		if(I[i+1]>max_I){
+			max_I <- I[i+1]
+			index <- (i+1)
+		}
+	}
+	#pushing setting the maxvalue for the iteration
+	Large_infect[j]= max_I
+	Large_infect_step[j]= index
+
+}
+#plot(Large_infect, Large_infect_step)
+
+#Expected value of max infected:
+print(mean(Large_infect))
+#Expected timestep to get to the max infected:
+print(mean(Large_infect_step))
+
+#Confidence intervals:
+
+print(quantile(Large_infect,c(.025,.975)))
+
+print(quantile(Large_infect_step,c(.025,.975)))
+```
+
+__Problem1g__
+g)
+making a function to simulate with different number of vaccinated
+we assume that the vaccinated cant become sick, thus we just remove them from the S variable, and use the same code as in f
+```{r,eval=TRUE}
+set.seed(123)
+
+Vacc_simulate= function(iteration, vaccinated){
+
+N<- iteration
+Large_infect= vector(length= N)
+Large_infect_step= vector(length= N)
+
+for(j in 1:N){
+	
+	#using the same code as for e for the simulations
+	n<- 300
+	S <- vector(length=n+1)
+	I <- vector(length=n+1)
+	R <- vector(length=n+1)
+
+	S[1]<- 950- vaccinated
+	I[1]<- 50
+	R[1]<- 0
+	
+	#initialize the maximum number of infected and its index
+	max_I<-0
+	index<-0
+
+
+	for (i in 1:n){
+	
+		S_n <- rbinom(1, R[i], .005)
+		I_n <- rbinom(1, S[i], .5*I[i]/1000)
+		R_n <- rbinom(1, I[i], .1)
+	# Saving the new states into the vector introduced previously
+		S[i+1]= S[i]+S_n-I_n
+		I[i+1]= I[i]+I_n-R_n
+		R[i+1]= R[i]+R_n-S_n
+
+		if(I[i+1]>max_I){
+			max_I <- I[i+1]
+			index <- (i+1)
+		}
+	}
+	#pushing setting the maxvalue for the iteration
+	Large_infect[j]= max_I
+	Large_infect_step[j]= index
+}
+print(mean(Large_infect))
+print(mean(Large_infect_step))
+return(I)
+}
+
+#Simulating the different cases, and one case where there are no vaccinated
+No_vac<-Vacc_simulate(1000, 0)
+
+I_case1<-Vacc_simulate(1000, 100)
+
+I_case2<-Vacc_simulate(1000, 600)
+
+I_case3<-Vacc_simulate(1000, 800)
+
+step<- seq(301)
+````
+
+```{r,eval=TRUE}
+
+plot(step, No_vac,col="blue", main="Result",xlab="Time", ylab="People in given state",ylim=c(0,1000))
+lines(step, I_case1,col="red")
+lines(step, I_case2, col="green")
+lines(step, I_case3, col="black")
+legend("topleft",legend=c("No vaccination","case1","case2","case3"), fill= c("blue","red","green","black"))
+```
+
+
 __Problem 2a__
 
 The function _Poisson_Process()_ calculates $n$ realizations of the Poisson Process.
@@ -185,3 +360,88 @@ N <- 9
 plot_poisson(t_value,lambda,N) 
 ```
 
+__Problem 2b__
+
+```{r, eval=TRUE}
+#Defining parameters
+N <- 1000
+gamma <- 10
+lambda <- 1.5
+
+simulate_poisgam <- function(N,gamma,lambda){
+  t_value <- 59
+  v <- numeric(N)
+  
+  #Simulating
+  for (n in 1:N) {
+    #Poisson distribution
+    X <- rpois(1, lambda * t_value)
+    z <- numeric(N)
+    
+    for (i in 1:X){
+      #Exponential distribution
+      c <- rexp(1, gamma)
+      z[i] = c
+    }
+    #Finding probs
+    if (sum(z) > 8) {
+      v[n] = 1
+    } else {
+      v[n] = 0
+    }
+  }
+  
+  return(v)
+}
+
+```
+
+```{r,eval=TRUE}
+#Probability
+mean(simulate_poisgam(N,gamma,lambda))
+```
+
+The estimated probability of the total claim amount exceeding 8 mill kr. after 59 days is $0.971$.
+
+We now want to provide the estimated probability by making a figure that shows $10$ realizations of $Z(t)$, for $t \in [0,59]$ in the same figure.
+```{r, eval=TRUE}
+color_palette <- brewer.pal(n = 10, name = 'RdBu')
+
+lambda <- 1.5
+gamma <- 10
+t_value <- 59
+N <- 9
+
+final_simulation <-function(lambda,gamma,t_value,N){
+  # Plot
+  plot(NULL, NULL, xlim = c(0, t_value), ylim = c(0, 12), xlab = "Time", ylab = "Total amount of claims", main = "Realization", lwd = 2)
+  #Simulation
+  for (n in 0:N) {
+    X <- rpois(1, lambda * t_value)
+  
+    t <- runif(X, 0, t_value)
+    t = c(0, sort(t), t_value)
+  
+    x= c(0:X, X)
+    z <- numeric(X)
+  
+  
+    for (i in 0:X){
+      C <- rexp(1, gamma)
+      z[i] <- C
+    }
+    
+  
+    cumulative_z <- c(0, cumsum(z))
+    l = length(x)
+    for (i in 1:(l - 1)){
+      lines(t[i:(i + 1)], rep(cumulative_z[i], 2), lwd = 2, col = color_palette[n])
+    }
+  }
+}
+
+```
+
+```{r,eval=TRUE}
+final_simulation(lambda,gamma,t_value,N)
+```
