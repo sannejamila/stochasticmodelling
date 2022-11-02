@@ -1,5 +1,94 @@
 ---
-title: "project2"
+title: "Project 2 - Stochastic Modelling"
 output: pdf_document
-date: '2022-11-02'
+date: 'By: Sanne Jamila Razmara Olsen & Einride Brodahl Osland'
 ---
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = TRUE,tidy=TRUE,message=FALSE,warning=FALSE,strip.white=TRUE,prompt=FALSE,
+                      cache=TRUE, size="scriptsize",fig.width=4, fig.height=3,fig.align = "center")
+```
+
+__Problem 1 - Urgent care center__
+
+Assume that $\lambda < \mu$, and letting $X(t)$ denote the number of patients in the UCC ar time $t$. We have $X(0) = 0$.
+
+a)
+
+In order for the UCC to be a M/M/1 queue the arrivals of patients must be a Poisson process, the service time must be identically distributed and follow an exponential distribution. We also need the number of customers to be a birth/death process, and the single server must be defined by the first to arrive being the first to be served. 
+
+For our case we assumed that the patients of the UCC follows a Poisson process with rate $\lambda > 0$ and we assumed that the treatment times of the patients follow independent exponential distributions, which means the same as the service time being identically distributed and follow an exponential distribution. We also have that the patients are waiting to be treated in a queue, where the first one gets treated first, meaning that the single server must be defined by the first to arrive being the first to be served. We see that thus the conditions for the UCC to be an M/M/1 queue are satisfied. 
+
+We can perceive the stochastic process as birth/death process, where $X(t)$ increases by one for a new person entering the queue, or decreasing by one for a finished treatment - time until new person arrives and the time until a person is treated are independently exponentially distributed with birth and death rates $\lambda$ and $\mu$.
+
+We now want to find the average time a patient will spend in the UCC as a function of the birth and death rates $\lambda$ and $\mu$.
+
+By Littles law we have $L = \lambda W$, where $L$ denotes the average number of customers, and $W$ denotes the average time spent by a customer in the system (which we want to find).
+
+We have that $W = \frac{L}{\lambda}$.
+
+We have that as $\lambda < \mu$ that $L$ must be on the form $L = \frac{\lambda}{\mu - \lambda}$. We thus have
+
+$$W = \frac{L}{\lambda} = \frac{1}{\mu-\lambda}$$
+Must be the average time spent by a customer in the system. 
+
+b)
+
+
+```{r,eval=TRUE}
+lambda = 5
+mu = 0.1*60    #Minutes to hours
+n = 50
+
+simulate_UCC <- function(lambda,mu,p){
+  U = c(0)  #List containing number of urgent patients for each n
+  Q = c(0)  #List containing number of "normal" patients for each n
+  X = c(0)  #List containing total number of patients
+  
+  #Defining entering and leaving times
+  
+  U_entertime = c()
+  N_entertime = c()
+  
+  U_leavetime = c()
+  N_leavetime = c()
+  
+  for(i in 1:n){
+    state = tail(X,1)
+    if(state == 0){ #No patients in UVV
+      times = c(times, (tail(times,1) + rexp(n=1, rate=lambda))) #Time of entering for next person
+      X = c(X, tail(X,1)+1) #Total people increment
+      q = runif(1)
+      #Checking if urgent or normal
+      if(q < p){
+        #TRUE -> urgent case
+        U = c(U, tail(U,1)+1) #Adding urgent person
+        U_entertime = c(U_entertime, tail(times,1)) #Adding time of entering
+      }
+      else{
+        #FALSE -> normal case
+        N = c(N, tail(N,1)+1) #Adding normal person
+        N_entertime = c(N_entertime, tail(times,1)) #Adding time of entering
+      }
+    }
+    else{
+      
+    }
+  }
+}
+
+
+#to be continued
+```
+
+c)
+
+We first want to show that $\{ U(t) : t \ge 0 \}$ satisfies the conditions for an M/M/1 queue. 
+
+We have that urgent patients have prioritized treatment, and thus the queuing system for $U(t)$ is the same as $X(t)$. We also have that the queue is defined by the first to come getting treatment first. We still have a Poisson process for this case, but with a different rate than for the former case ($X(t)$). The treatment time is independent of the shift in queue and is thus still exponentially distributed. We still have one server, and we therefore have an M/M/1 queue. 
+
+We now want to determine the arrival rate. We have that the probability of being an urgent patients is $p$, and thus the arrival rate for the urgent patients is $p \lambda$, and it must therefore be $(p-1) \lambda$ for the normal patients.
+
+We now want to determine the long-run mean number of urgent patients in the UCC s a function of $\lambda, \mu$ and $p$.
+
+
