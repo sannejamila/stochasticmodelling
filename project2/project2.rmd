@@ -272,7 +272,119 @@ Further let $\vec X_B \sim N_{n_B} (\vec \mu_B, \Sigma_B)$ be $Y(\theta)$ with $
 We thus have
 
 $$
-\vec X = (\vec X_A, \vec X_B) \sim N_{n_A + n_B}()
+\vec X = (\vec X_A, \vec X_B) \sim N_{n_A + n_B}(\begin{bmatrix}
+\vec \mu_A\\
+\vec \mu_B
+\end{bmatrix}, \begin{bmatrix}
+\Sigma_{AA} & \Sigma_{AB}\\
+\Sigma_{BA} & \Sigma_{BB}
+\end{bmatrix})
 $$
+We have that $\vec \mu_A = \begin{bmatrix} 0.5, 0.5... 0.5\end{bmatrix}^T$ and $\vec \mu_B = \begin{bmatrix} 0.5, 0.5... 0.5\end{bmatrix}^T$ with lengths $n_A = 51, n_B = 5$.
+
+We find the covariance matrix
+
+$$
+\begin{aligned}
+Cov(Y(\theta_1),Y(\theta_2)) &= \sqrt{Var[Y(\theta_1)]Var[Y(\theta_2)]} \cdot Corr[Y(\theta_1),Y(\theta_2)]
+\\
+&= \sqrt{0.5^2 \cdot 0.5^2} \cdot (1 + 15 \cdot \mid \theta_1 - \theta_2 \mid) \cdot \exp(-15 \cdot \mid \theta_1 - \theta_2 \mid)
+\\
+&= 0.5^2\cdot (1 + 15 \cdot \mid \theta_1 - \theta_2 \mid) \cdot \exp(-15 \cdot \mid \theta_1 - \theta_2 \mid)
+\end{aligned}
+$$
+Which gives us the following conditional distribution
+
+$$
+\vec X_C = (\vec X_A \mid \vec X_B = \vec x_B) \sim N_{n_A}(\vec \mu_C, \Sigma_C)
+$$
+For $\vec \mu_C = \vec \mu_A + \Sigma_{AB}\Sigma_{BB}^{-1}(\vec x_B - \vec \mu_B)$
+
+and $\Sigma_C = \Sigma_{AA} -\Sigma_{AB}\Sigma_{BB}^{-1}\Sigma_{BA}$.
+
+We now want to find a $90%$ prediction interval for $\mu_C$.
+
+
+```{r,eval=TRUE}
+theta = c(0.3,0.35,0.39,0.41,0.45)
+y_theta = c(0.5,0.32,0.4, 0.35,0.6)
+
+variance = 0.5*0.5
+
+
+correlation <-function(a,b){
+  return(1 + 15*abs(a-b)*exp(-15*abs(a-b)))
+}
+
+
+covariance <- function(a,b){
+  #a,b = two different theta values
+  n_a = length(a)
+  n_b = length(b)
+  
+  cov_matrix <- matrix(n_a*n_b, n_a, n_b)
+  
+  for(i in 1:n_a){
+    for(j in 1:n_b){
+      cov_matrix[i,j] = correlation(a[i], b[j])*variance
+    }
+  }
+  return(cov_matrix)
+}
+
+calculate_muSigma <- function(a,b,mu_a, mu_b, x_b){
+  mu_c = mu_a + covariance(a,b) %*% solve(covariance(b,b)) %*% (x_b - mu_b)
+  
+  sigma_c = covariance(a,a) - covariance(a,b) %*% solve(covariance(b,b)) %*% covariance(b,a)
+  
+  return(list(mu_c,sigma_c))
+}
+
+
+a = seq(0.25,0.5, by = 0.005)
+b = theta
+
+mu_a = seq(0.5,0.5,length = 51)
+mu_b = seq(0.5,0.5,length = 5)
+
+b = theta
+x_b = y_theta
+  
+res <- calculate_muSigma(a,b,mu_a,mu_b,x_b)
+
+variance_c = diag(unlist(res[2]))
+mu_c = unlist(res[1])
+
+
+prediction_interval <- function(mu_c){
+  U = mu_c
+  L = mu_c
+  n_c = length(mu_c)
+  
+  for(i in 1:n_c){
+    p_i = 1.645*sqrt(variance_c[i])
+    U[i] = U[i] + p_i
+    L[i] = L[i] - p_i
+  }
+  
+  return(list(U,L))
+}
+
+pred_int = prediction_interval(mu_c)
+
+
+U = unlist(pred_int[1])
+L = unlist(pred_int[2])
+
+
+#plot(NULL, NULL, xlim=c(0.25, 0.5), ylim=c(min(L)*0.9, max(U)*1.1), main=expression(paste("90% Prediction interval")),
+         #xlab=expression(paste("[", theta, "]")), ylab=expression(paste("y(", theta, ")")))
+    #lines(a, L, col="green")
+    #lines(a, U, col="blue")
+    #lines(a, mu_c, col="red")
+    #points(b, y_theta, col="black")
+   # legend(x="topleft", legend=c("Lower bound of PI", "Upper bound of PI", expression(paste(mu["C"])), "Observed"), 
+    #       col=c("green", "blue", "red", "black"), lty = c(1, 1, 1, NA), pch=c(NA, NA, NA,1))
+```
 
 
