@@ -33,53 +33,145 @@ $$W = \frac{L}{\lambda} = \frac{1}{\mu-\lambda}$$
 Must be the average time spent by a customer in the system. 
 
 b)
+```{r,echo=FALSE}
+set.seed(8118)
+lambda  = 5
+mu = 6
+p = 0.8
 
+UCC_sim <- function(n, lambda, mu, p){
+  times = c(0) 
+  
+  U_entertime = c() 
+  N_entertime = c() 
+  
+  U_leavetime = c() 
+  N_leavetime = c() 
+  
+  N = c(0) 
+  U = c(0) 
+  
+  X = c(0) 
 
-```{r,eval=TRUE}
-lambda = 5
-mu = 0.1*60    #Minutes to hours
-n = 50
-
-simulate_UCC <- function(lambda,mu,p){
-  U = c(0)  #List containing number of urgent patients for each n
-  Q = c(0)  #List containing number of "normal" patients for each n
-  X = c(0)  #List containing total number of patients
-  
-  #Defining entering and leaving times
-  
-  U_entertime = c()
-  N_entertime = c()
-  
-  U_leavetime = c()
-  N_leavetime = c()
-  
-  for(i in 1:n){
-    state = tail(X,1)
-    if(state == 0){ #No patients in UVV
-      times = c(times, (tail(times,1) + rexp(n=1, rate=lambda))) #Time of entering for next person
-      X = c(X, tail(X,1)+1) #Total people increment
+  while((tail(times, 1)) < n){
+    state = tail(X, 1)
+    if(state == 0){ 
+      times = c(times, (tail(times, 1) + rexp(n=1, rate = lambda))) #time where
+      X = c(X, tail(X, 1)+1)
       q = runif(1)
-      #Checking if urgent or normal
-      if(q < p){
-        #TRUE -> urgent case
-        U = c(U, tail(U,1)+1) #Adding urgent person
-        U_entertime = c(U_entertime, tail(times,1)) #Adding time of entering
+      if(q < p){ 
+        #Urgent patient
+        U = c(U, tail(U, 1)+1) 
+        N = c(N, tail(N, 1)) 
+        U_entertime = c(U_entertime, tail(times, 1)) 
       }
       else{
-        #FALSE -> normal case
-        N = c(N, tail(N,1)+1) #Adding normal person
-        N_entertime = c(N_entertime, tail(times,1)) #Adding time of entering
+        #Normal patient
+        N = c(N, tail(N, 1) + 1)
+        U = c(U, tail(U, 1))
+        N_entertime = c(N_entertime, tail(times, 1))
       }
     }
     else{
-      
+      times = c(times, (tail(times, 1) + rexp(n=1, rate = lambda+mu)))
+      r = runif(1)
+      if(r < lambda/(lambda+mu)){ 
+        #New patient in UCC
+        X = c(X, tail(X, 1)+1)
+        q = runif(1)
+        if(q < p){ 
+          #Urgent patient
+          U = c(U, tail(U, 1)+1)
+          N = c(N, tail(N, 1))
+          U_entertime = c(U_entertime, tail(times, 1))
+        }
+        else{
+          #Normal patient
+          N = c(N, tail(N, 1) + 1)
+          U = c(U, tail(U, 1))
+          N_entertime = c(N_entertime, tail(times, 1))
+        }
+      }
+      else{ 
+        #Patient leaves
+        X = c(X, tail(X, 1)-1)
+        if(tail(U, 1) == 0){ 
+          #Normal patient leaves
+          N = c(N, tail(N, 1) - 1)
+          U = c(U, tail(U, 1))
+          N_leavetime  = c(N_leavetime , tail(times, 1)) 
+        }
+        else{
+          #Urgent patient leaves
+          U = c(U, tail(U, 1) - 1) 
+          N = c(N, tail(N, 1))
+          U_leavetime  = c(U_leavetime , tail(times, 1))
+        }
+      }
     }
   }
+  
+  U_time_UCC = U_leavetime - U_entertime[1:length(U_leavetime)]
+  N_time_UCC = N_leavetime - N_entertime[1:length(N_leavetime)]
+  return (list(N, U, X, times, mean(U_time_UCC), mean(N_time_UCC))) 
 }
 
 
-#to be continued
+confidence_interval <- function(n){
+ 
+  estimates <- replicate(n, UCC_sim(50, lambda, mu, 1)[5]) 
+  
+  U_times= unlist(estimates)
+ 
+
+  U_mean = mean(U_times)
+  U_sd = sd(U_times)
+  
+  quantile = 2.045
+  
+  L_U = U_mean - quantile*U_sd/sqrt(n)
+  U_U = U_mean + quantile*U_sd/sqrt(n)
+
+  
+  return(c(L_U,U_U))
+}
+
+CI = confidence_interval(30)
+
 ```
+
+
+```{r,echo=FALSE}
+
+sim = UCC_sim(50, lambda, mu, 1)
+
+X = unlist(sim[3])
+times = unlist(sim[4])
+
+plot(NULL, NULL, xlim = c(0, 12), ylim = c(0, 6), ylab = "X(t)", xlab = "Hours",
+     main = expression(paste("Patients in the UCC")))
+for(i in 1:length(times)){
+  lines(times[i:(i+1)], rep(X[i], 2), col = "red", lwd = 3)
+}
+
+```
+Figure $1$ shows the simulation for $50$ days. Here we see the simulation for the first 12 hours. 
+
+In our code, the list _times_ kept track of the time for each event (someone enters or leaves the UCC). We also kept track of which time someone left the UCC, and another list for when someone entered the UCC. The difference between these vectors contains the time spent in the UCC, which by finding the mean of this vector gave us the estimated time a patient spent in the UCC. 
+
+The confidence interval was assumed to be a $t-distribution$:
+
+$$
+[a  -  \frac{b}{\sqrt(n)}, a  +  \frac{b}{\sqrt(n)}]
+$$
+Where $a$ is the mean and $b$ is the standard deviation.
+
+Our computed confidence interval was $[0.9318184 1.0281969]$. For task $1a)$ we found the expected waiting time to be $W = \frac{1}{\mu - \lambda}$ which for our values gives
+
+$$
+W = \frac{1}{\mu - \lambda} = \frac{1}{6-5} = 1
+$$
+Which lays in our computed confidence interval.
 
 c)
 
@@ -217,7 +309,6 @@ WU = W_U(P)
 WN = W_N(P)
 
 plot(NULL, NULL, xlim=c(0, 1), ylim=c(min(c(WU, WN)) , max(c(WU, WN))), xlab="p", ylab="Expected waiting time")
-  #Creates a figure and makes labels and titles.
   lines(P, WU, col="red")
   lines(P, WN, col="blue")
   legend(x="topleft", legend=c("Normal", "Urgent"), col=c("blue", "red"), lty=1:1)
@@ -257,7 +348,30 @@ $$
 $$
 Thus if the waiting time for a normal patient is 2 hours, then the chance of someone being a urgent patient is $p = \frac{3}{5}$.
 
-g) NOT STARTED
+g) 
+
+```{r,echo=FALSE}
+lambda = 5
+mu = 0.1 * 60  #per hour
+p = 0.8
+n = 50*24  #in hours
+
+set.seed(4393)
+
+simulation = UCC_sim(lambda,mu,p,n)
+
+X = unlist(simulation[1])
+U = unlist(simulation[2])
+times = unlist(simulation[4])
+
+plot(NULL, NULL, xlim = c(0, 12), ylim = c(0, 11), ylab = "Number of patients",
+     xlab = "Hours", main = expression(paste("Urgent and total number of patients in UCC")))
+legend("topleft", legend = c("Total", "Urgent"), col = c("Blue", "Red"), lwd = 2)
+for (i in 1:(length(times))){
+  lines(times[i:(i+1)], rep(U[i], 2), col = "red", lwd = 3)
+  lines(times[i:(i+1)], rep(X[i], 2), col = "blue", lwd = 3)
+}
+```
 
 __Problem 2 - Calibrating climate models__
 
@@ -305,7 +419,7 @@ and $\Sigma_C = \Sigma_{AA} -\Sigma_{AB}\Sigma_{BB}^{-1}\Sigma_{BA}$.
 We now want to find a $90%$ prediction interval for $\mu_C$.
 
 
-```{r,eval=TRUE}
+```{r,echo=FALSE}
 theta = c(0.3,0.35,0.39,0.41,0.45)
 y_theta = c(0.5,0.32,0.4, 0.35,0.6)
 
@@ -386,5 +500,9 @@ L = unlist(pred_int[2])
    # legend(x="topleft", legend=c("Lower bound of PI", "Upper bound of PI", expression(paste(mu["C"])), "Observed"), 
     #       col=c("green", "blue", "red", "black"), lty = c(1, 1, 1, NA), pch=c(NA, NA, NA,1))
 ```
+To be continued
+
+b)
+
 
 
